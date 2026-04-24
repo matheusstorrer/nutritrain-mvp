@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
-import { getAllDietPlans, workoutPlans, getAllStudents, WEEK_DAYS, DietPlan, WorkoutPlan } from '@/lib/data'
+import { getAllDietPlans, getAllWorkoutPlans, getAllStudents, WEEK_DAYS, DietPlan, WorkoutPlan } from '@/lib/data'
 import { Suspense } from 'react'
 
 interface User { name: string; jobRole: string }
@@ -168,7 +168,7 @@ function PlanosContent() {
   if (!user) return null
 
   const diets = getAllDietPlans()
-  const workouts = Object.values(workoutPlans)
+  const workouts = getAllWorkoutPlans()
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -188,6 +188,14 @@ function PlanosContent() {
               className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2"
             >
               + Criar Plano Alimentar
+            </button>
+          )}
+          {tab === 'treino' && (
+            <button
+              onClick={() => router.push('/planos/criar-treino')}
+              className="bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2"
+            >
+              + Criar Plano de Treino
             </button>
           )}
         </div>

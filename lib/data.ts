@@ -569,9 +569,32 @@ export function getDietPlan(id: string | null) {
   return dietPlans[id] ?? getStoredDietPlans().find(p => p.id === id) ?? null
 }
 
+export function getStoredWorkoutPlans(): WorkoutPlan[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem('nt_custom_workouts')
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+export function saveCustomWorkoutPlan(plan: WorkoutPlan) {
+  if (typeof window === 'undefined') return
+  try {
+    const existing = getStoredWorkoutPlans()
+    const idx = existing.findIndex(p => p.id === plan.id)
+    if (idx >= 0) existing[idx] = plan
+    else existing.push(plan)
+    localStorage.setItem('nt_custom_workouts', JSON.stringify(existing))
+  } catch {}
+}
+
+export function getAllWorkoutPlans(): WorkoutPlan[] {
+  return [...Object.values(workoutPlans), ...getStoredWorkoutPlans()]
+}
+
 export function getWorkoutPlan(id: string | null) {
   if (!id) return null
-  return workoutPlans[id] ?? null
+  return workoutPlans[id] ?? getStoredWorkoutPlans().find(p => p.id === id) ?? null
 }
 
 export function totalKcal(meals: Meal[]) {
