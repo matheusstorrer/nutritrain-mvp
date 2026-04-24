@@ -73,6 +73,96 @@ export interface Student {
 
 export const WEEK_DAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
 
+export interface ExerciseEntry {
+  name: string
+  muscle: string
+  emoji: string
+}
+
+export const EXERCISE_LIBRARY: Record<string, ExerciseEntry[]> = {
+  'Peito': [
+    { name: 'Supino Reto com Barra', muscle: 'Peitoral maior, deltóide anterior, tríceps', emoji: '🏋️' },
+    { name: 'Supino Inclinado com Halteres', muscle: 'Peitoral superior, deltóide anterior', emoji: '🏋️' },
+    { name: 'Supino Declinado com Barra', muscle: 'Peitoral inferior', emoji: '🏋️' },
+    { name: 'Crucifixo com Halteres', muscle: 'Peitoral, amplitude', emoji: '🤸' },
+    { name: 'Crossover na Polia', muscle: 'Peitoral, contração interna', emoji: '🤸' },
+    { name: 'Flexão de Braço', muscle: 'Peitoral, tríceps, core', emoji: '💪' },
+    { name: 'Peck Deck', muscle: 'Peitoral médio e interno', emoji: '🤸' },
+  ],
+  'Costas': [
+    { name: 'Puxada Frontal na Barra', muscle: 'Latíssimo do dorso, bíceps', emoji: '🏋️' },
+    { name: 'Remada Curvada com Barra', muscle: 'Trapézio, rombóides, dorsais', emoji: '🏋️' },
+    { name: 'Remada Unilateral com Halter', muscle: 'Dorsais, bíceps, rombóides', emoji: '🏋️' },
+    { name: 'Remada Baixa na Polia', muscle: 'Trapézio médio, rombóides', emoji: '🏋️' },
+    { name: 'Levantamento Terra', muscle: 'Dorsais, glúteos, isquiotibiais, trapézio', emoji: '🏋️' },
+    { name: 'Barra Fixa (Pull-up)', muscle: 'Latíssimo, bíceps, core', emoji: '💪' },
+    { name: 'Pullover com Halter', muscle: 'Latíssimo, peitoral, tríceps', emoji: '🤸' },
+  ],
+  'Ombros': [
+    { name: 'Desenvolvimento Militar com Barra', muscle: 'Deltóide anterior e médio, tríceps', emoji: '🏋️' },
+    { name: 'Desenvolvimento com Halteres', muscle: 'Deltóide anterior e médio', emoji: '🏋️' },
+    { name: 'Elevação Lateral com Halteres', muscle: 'Deltóide médio', emoji: '🤸' },
+    { name: 'Elevação Frontal com Halteres', muscle: 'Deltóide anterior', emoji: '🤸' },
+    { name: 'Remada Alta com Barra', muscle: 'Deltóide, trapézio', emoji: '🏋️' },
+    { name: 'Encolhimento de Ombros', muscle: 'Trapézio superior', emoji: '🏋️' },
+    { name: 'Crucifixo Inverso', muscle: 'Deltóide posterior, rombóides', emoji: '🤸' },
+  ],
+  'Bíceps': [
+    { name: 'Rosca Direta com Barra', muscle: 'Bíceps braquial', emoji: '💪' },
+    { name: 'Rosca Alternada com Halteres', muscle: 'Bíceps braquial, braquial', emoji: '💪' },
+    { name: 'Rosca Martelo', muscle: 'Braquiorradial, bíceps', emoji: '💪' },
+    { name: 'Rosca Concentrada', muscle: 'Bíceps — pico', emoji: '💪' },
+    { name: 'Rosca na Polia Baixa', muscle: 'Bíceps, tensão constante', emoji: '💪' },
+    { name: 'Rosca Scott (Banco Scott)', muscle: 'Bíceps braquial inferior', emoji: '💪' },
+  ],
+  'Tríceps': [
+    { name: 'Tríceps Corda na Polia', muscle: 'Tríceps — cabeça lateral', emoji: '💪' },
+    { name: 'Tríceps Testa com Barra', muscle: 'Tríceps — cabeça longa', emoji: '💪' },
+    { name: 'Mergulho no Banco', muscle: 'Tríceps, peitoral inferior', emoji: '🔄' },
+    { name: 'Extensão de Tríceps com Halter', muscle: 'Tríceps — cabeça longa', emoji: '💪' },
+    { name: 'Tríceps Coice com Halter', muscle: 'Tríceps — cabeça lateral e medial', emoji: '💪' },
+    { name: 'Dips (Paralelas)', muscle: 'Tríceps, peitoral, deltóide', emoji: '💪' },
+  ],
+  'Pernas': [
+    { name: 'Agachamento Livre', muscle: 'Quadríceps, glúteos, isquiotibiais', emoji: '🏋️' },
+    { name: 'Leg Press 45°', muscle: 'Quadríceps, glúteos', emoji: '🦵' },
+    { name: 'Extensora', muscle: 'Quadríceps — isolado', emoji: '🦵' },
+    { name: 'Cadeira Flexora', muscle: 'Isquiotibiais', emoji: '🦵' },
+    { name: 'Stiff com Barra', muscle: 'Isquiotibiais, glúteos, coluna', emoji: '🏋️' },
+    { name: 'Avanço (Lunges)', muscle: 'Quadríceps, glúteos', emoji: '🦵' },
+    { name: 'Agachamento Sumô', muscle: 'Glúteos, adutores, quadríceps', emoji: '🦵' },
+    { name: 'Hack Squat', muscle: 'Quadríceps, glúteos', emoji: '🦵' },
+    { name: 'Leg Curl Deitado', muscle: 'Isquiotibiais', emoji: '🦵' },
+    { name: 'Elevação de Panturrilha em Pé', muscle: 'Gastrocnêmio, sóleo', emoji: '🦶' },
+  ],
+  'Glúteos': [
+    { name: 'Hip Thrust (Elevação de Quadril)', muscle: 'Glúteo máximo', emoji: '🍑' },
+    { name: 'Abdução de Quadril na Máquina', muscle: 'Glúteo médio e mínimo', emoji: '🍑' },
+    { name: 'Coice com Extensão no Crossover', muscle: 'Glúteo máximo', emoji: '🍑' },
+    { name: 'Elevação de Quadril Unilateral', muscle: 'Glúteo máximo — unilateral', emoji: '🍑' },
+    { name: 'Agachamento Sumô com Halteres', muscle: 'Glúteos, adutores', emoji: '🍑' },
+    { name: 'Passada com Halteres', muscle: 'Glúteos, quadríceps', emoji: '🦵' },
+  ],
+  'Abdômen': [
+    { name: 'Abdominal Supra', muscle: 'Reto abdominal superior', emoji: '🔥' },
+    { name: 'Prancha Isométrica', muscle: 'Core completo', emoji: '🔥' },
+    { name: 'Abdominal Infra', muscle: 'Reto abdominal inferior', emoji: '🔥' },
+    { name: 'Crunch na Máquina', muscle: 'Reto abdominal', emoji: '🔥' },
+    { name: 'Oblíquo com Polia', muscle: 'Oblíquos', emoji: '🔥' },
+    { name: 'Russian Twist', muscle: 'Oblíquos, core', emoji: '🔥' },
+    { name: 'Elevação de Pernas', muscle: 'Reto abdominal inferior, flexores', emoji: '🔥' },
+  ],
+  'Cardio': [
+    { name: 'Esteira (Corrida)', muscle: 'Cardiorrespiratório, pernas', emoji: '🏃' },
+    { name: 'Bicicleta Ergométrica', muscle: 'Cardiorrespiratório, quadríceps', emoji: '🏃' },
+    { name: 'Elíptico', muscle: 'Cardiorrespiratório, corpo todo', emoji: '🏃' },
+    { name: 'Burpee', muscle: 'Corpo todo, condicionamento', emoji: '⚡' },
+    { name: 'Polichinelo', muscle: 'Cardiorrespiratório, coordenação', emoji: '⚡' },
+    { name: 'Corda (Jump Rope)', muscle: 'Cardiorrespiratório, panturrilha', emoji: '⚡' },
+    { name: 'High Knees', muscle: 'Cardiorrespiratório, core', emoji: '⚡' },
+  ],
+}
+
 export const dietPlans: Record<string, DietPlan> = {
   dp1: {
     id: 'dp1',
@@ -451,9 +541,32 @@ export function saveExercise(planId: string, day: string, exercise: Exercise) {
   } catch {}
 }
 
+export function getStoredDietPlans(): DietPlan[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem('nt_custom_diets')
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+export function saveCustomDietPlan(plan: DietPlan) {
+  if (typeof window === 'undefined') return
+  try {
+    const existing = getStoredDietPlans()
+    const idx = existing.findIndex(p => p.id === plan.id)
+    if (idx >= 0) existing[idx] = plan
+    else existing.push(plan)
+    localStorage.setItem('nt_custom_diets', JSON.stringify(existing))
+  } catch {}
+}
+
+export function getAllDietPlans(): DietPlan[] {
+  return [...Object.values(dietPlans), ...getStoredDietPlans()]
+}
+
 export function getDietPlan(id: string | null) {
   if (!id) return null
-  return dietPlans[id] ?? null
+  return dietPlans[id] ?? getStoredDietPlans().find(p => p.id === id) ?? null
 }
 
 export function getWorkoutPlan(id: string | null) {

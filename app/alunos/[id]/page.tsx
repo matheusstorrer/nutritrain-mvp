@@ -5,13 +5,12 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import AssignPlanModal from '@/components/AssignPlanModal'
-import { getStudent, getDietPlan, getWorkoutPlan, WEEK_DAYS, saveExercise, getStoredExercises, Exercise } from '@/lib/data'
+import { getStudent, getDietPlan, getWorkoutPlan, WEEK_DAYS, saveExercise, getStoredExercises, Exercise, EXERCISE_LIBRARY } from '@/lib/data'
 
 interface User { name: string; jobRole: string }
 
-const EXERCISE_EMOJIS = ['🏋️', '💪', '🤸', '🦵', '🔥', '⚡', '🏃', '🔄', '🦶']
-
-const defaultExForm = { name: '', muscle: '', sets: '3', reps: '12', rest: '60s', load: '' }
+const REGIONS = Object.keys(EXERCISE_LIBRARY)
+const defaultExForm = { sets: '3', reps: '12', rest: '60s', load: '' }
 
 export default function StudentProfilePage() {
   const router = useRouter()
@@ -29,6 +28,8 @@ export default function StudentProfilePage() {
 
   // Add exercise modal
   const [showAddEx, setShowAddEx] = useState(false)
+  const [exRegion, setExRegion] = useState(REGIONS[0])
+  const [exSelected, setExSelected] = useState<{ name: string; muscle: string; emoji: string } | null>(null)
   const [exForm, setExForm] = useState(defaultExForm)
   const [exSaving, setExSaving] = useState(false)
 
@@ -67,21 +68,22 @@ export default function StudentProfilePage() {
   }
 
   function handleSaveExercise() {
-    if (!workout || !exForm.name.trim()) return
+    if (!workout || !exSelected) return
     setExSaving(true)
     setTimeout(() => {
       const exercise: Exercise = {
-        name: exForm.name.trim(),
-        muscle: exForm.muscle.trim() || 'Geral',
+        name: exSelected.name,
+        muscle: exSelected.muscle,
         sets: parseInt(exForm.sets) || 3,
         reps: exForm.reps || '12',
         rest: exForm.rest || '60s',
         load: exForm.load.trim() || 'Peso corporal',
-        emoji: EXERCISE_EMOJIS[Math.floor(Math.random() * EXERCISE_EMOJIS.length)],
+        emoji: exSelected.emoji,
       }
       saveExercise(workout.id, activeDay, exercise)
       setRefreshKey(k => k + 1)
       setShowAddEx(false)
+      setExSelected(null)
       setExForm(defaultExForm)
       setExSaving(false)
     }, 400)
@@ -465,73 +467,114 @@ export default function StudentProfilePage() {
       {/* Add Exercise Modal */}
       {showAddEx && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAddEx(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-900 to-[#1e3a5f] px-6 py-5 flex items-center justify-between">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setShowAddEx(false); setExSelected(null) }} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-slate-900 to-[#1e3a5f] px-6 py-5 flex items-center justify-between flex-shrink-0">
               <div>
                 <h2 className="text-white font-black text-lg">Adicionar Exercício</h2>
                 <p className="text-white/40 text-xs mt-0.5">{activeDay}{workoutDayObj ? ` — ${workoutDayObj.focus}` : ''}</p>
               </div>
-              <button onClick={() => setShowAddEx(false)} className="text-white/40 hover:text-white/80 text-xl transition-colors">✕</button>
+              <button onClick={() => { setShowAddEx(false); setExSelected(null) }} className="text-white/40 hover:text-white/80 text-xl transition-colors">✕</button>
             </div>
 
-            <div className="px-6 py-5 flex flex-col gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">
-                  Nome do exercício <span className="text-red-400">*</span>
-                </label>
-                <input
-                  value={exForm.name}
-                  onChange={e => setEx('name', e.target.value)}
-                  placeholder="Ex: Supino Reto com Barra"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-green-500 focus:bg-white transition-colors"
-                />
+            <div className="flex flex-1 overflow-hidden">
+              {/* Left: region tabs */}
+              <div className="w-32 border-r border-gray-100 bg-gray-50 flex flex-col overflow-y-auto flex-shrink-0">
+                {REGIONS.map(region => (
+                  <button
+                    key={region}
+                    onClick={() => { setExRegion(region); setExSelected(null) }}
+                    className={`px-3 py-3 text-left text-xs font-semibold transition-colors border-l-2 ${
+                      exRegion === region
+                        ? 'border-green-500 bg-white text-gray-900'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {region}
+                  </button>
+                ))}
               </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Músculo / Foco</label>
-                <input
-                  value={exForm.muscle}
-                  onChange={e => setEx('muscle', e.target.value)}
-                  placeholder="Ex: Peitoral, tríceps"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-green-500 focus:bg-white transition-colors"
-                />
+
+              {/* Middle: exercise list */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-3 flex flex-col gap-1.5">
+                  {EXERCISE_LIBRARY[exRegion].map(ex => (
+                    <button
+                      key={ex.name}
+                      onClick={() => setExSelected(ex)}
+                      className={`w-full text-left px-3.5 py-3 rounded-xl border transition-all ${
+                        exSelected?.name === ex.name
+                          ? 'border-green-400 bg-green-50'
+                          : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-lg flex-shrink-0">{ex.emoji}</span>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-gray-900 text-sm leading-tight">{ex.name}</div>
+                          <div className="text-[11px] text-gray-400 mt-0.5 truncate">{ex.muscle}</div>
+                        </div>
+                        {exSelected?.name === ex.name && (
+                          <span className="ml-auto text-green-500 flex-shrink-0">✓</span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+            </div>
+
+            {/* Bottom: params + save */}
+            <div className="border-t border-gray-100 px-5 py-4 bg-gray-50/50 flex-shrink-0">
+              {exSelected ? (
+                <div className="mb-3 flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-3 py-2">
+                  <span className="text-lg">{exSelected.emoji}</span>
+                  <div>
+                    <div className="text-sm font-bold text-gray-900">{exSelected.name}</div>
+                    <div className="text-[11px] text-gray-400">{exSelected.muscle}</div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 mb-3">Selecione um exercício na lista acima</p>
+              )}
+
+              <div className="grid grid-cols-4 gap-2 mb-4">
                 {[
                   { key: 'sets', label: 'Séries', placeholder: '3' },
                   { key: 'reps', label: 'Repetições', placeholder: '12' },
                   { key: 'rest', label: 'Descanso', placeholder: '60s' },
-                  { key: 'load', label: 'Carga', placeholder: 'Ex: 20kg' },
+                  { key: 'load', label: 'Carga', placeholder: '20kg' },
                 ].map(f => (
                   <div key={f.key}>
-                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">{f.label}</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">{f.label}</label>
                     <input
                       value={exForm[f.key as keyof typeof exForm]}
                       onChange={e => setEx(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-green-500 focus:bg-white transition-colors"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-center font-semibold focus:outline-none focus:border-green-500 transition-colors"
                     />
                   </div>
                 ))}
               </div>
-            </div>
 
-            <div className="px-6 py-4 border-t border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <button
-                onClick={() => setShowAddEx(false)}
-                className="text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSaveExercise}
-                disabled={!exForm.name.trim() || exSaving}
-                className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {exSaving ? (
-                  <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Salvando...</>
-                ) : '+ Adicionar'}
-              </button>
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={() => { setShowAddEx(false); setExSelected(null) }}
+                  className="text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveExercise}
+                  disabled={!exSelected || exSaving}
+                  className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-40 flex items-center gap-2"
+                >
+                  {exSaving
+                    ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Salvando...</>
+                    : '+ Adicionar'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

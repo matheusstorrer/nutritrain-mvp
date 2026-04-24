@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
-import { dietPlans, workoutPlans, getAllStudents, WEEK_DAYS, DietPlan, WorkoutPlan } from '@/lib/data'
+import { getAllDietPlans, workoutPlans, getAllStudents, WEEK_DAYS, DietPlan, WorkoutPlan } from '@/lib/data'
 import { Suspense } from 'react'
 
 interface User { name: string; jobRole: string }
@@ -149,6 +149,7 @@ function PlanosContent() {
   const tipo = searchParams.get('tipo')
   const [user, setUser] = useState<User | null>(null)
   const [tab, setTab] = useState<'dieta' | 'treino'>(tipo === 'treino' ? 'treino' : 'dieta')
+  const [, forceUpdate] = useState(0)
 
   useEffect(() => {
     const stored = localStorage.getItem('nt_user')
@@ -156,6 +157,7 @@ function PlanosContent() {
     const u = JSON.parse(stored)
     if (u.role !== 'professional') { router.push('/portal'); return }
     setUser({ name: u.name, jobRole: u.jobRole })
+    forceUpdate(n => n + 1)
   }, [router])
 
   useEffect(() => {
@@ -165,7 +167,7 @@ function PlanosContent() {
 
   if (!user) return null
 
-  const diets = Object.values(dietPlans)
+  const diets = getAllDietPlans()
   const workouts = Object.values(workoutPlans)
 
   return (
@@ -173,11 +175,21 @@ function PlanosContent() {
       <Sidebar userName={user.name} userRole={user.jobRole} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-white border-b border-gray-200 px-7 py-4">
-          <h1 className="text-[17px] font-bold text-gray-900">Planos</h1>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {diets.length} planos alimentares · {workouts.length} planos de treino
-          </p>
+        <div className="bg-white border-b border-gray-200 px-7 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-[17px] font-bold text-gray-900">Planos</h1>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {diets.length} planos alimentares · {workouts.length} planos de treino
+            </p>
+          </div>
+          {tab === 'dieta' && (
+            <button
+              onClick={() => router.push('/planos/criar-dieta')}
+              className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2"
+            >
+              + Criar Plano Alimentar
+            </button>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto px-7 py-6">

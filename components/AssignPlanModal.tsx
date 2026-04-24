@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { dietPlans, workoutPlans, saveStudentPlanUpdate, Student } from '@/lib/data'
+import { useState, useEffect } from 'react'
+import { getAllDietPlans, workoutPlans, saveStudentPlanUpdate, Student, DietPlan } from '@/lib/data'
 
 interface Props {
   student: Student
@@ -14,8 +14,10 @@ export default function AssignPlanModal({ student, defaultType = null, onClose, 
   const [type, setType] = useState<'diet' | 'workout' | null>(defaultType)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [diets, setDiets] = useState<DietPlan[]>([])
 
-  const diets = Object.values(dietPlans)
+  useEffect(() => { setDiets(getAllDietPlans()) }, [])
+
   const workouts = Object.values(workoutPlans)
 
   function handleSave() {
