@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
-import { students } from '@/lib/data'
+import NewStudentModal from '@/components/NewStudentModal'
+import { students as mockStudents, getAllStudents, Student } from '@/lib/data'
 
 interface User { name: string; jobRole: string }
 
@@ -25,8 +26,10 @@ function planBadge(plans: string[]) {
 export default function AlunosPage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
+  const [students, setStudents] = useState<Student[]>(mockStudents)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'diet' | 'workout' | 'both'>('all')
+  const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem('nt_user')
@@ -34,11 +37,17 @@ export default function AlunosPage() {
     const u = JSON.parse(stored)
     if (u.role !== 'professional') { router.push('/portal'); return }
     setUser({ name: u.name, jobRole: u.jobRole })
+    setStudents(getAllStudents())
   }, [router])
+
+  function handleAdd(s: Student) {
+    setStudents(prev => [...prev, s])
+    setShowModal(false)
+  }
 
   if (!user) return null
 
-  const filtered = students.filter((s) => {
+  const filtered = students.filter(s => {
     const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
       s.email.toLowerCase().includes(search.toLowerCase())
     if (filter === 'diet') return matchSearch && s.plans.includes('diet') && !s.plans.includes('workout')
@@ -57,23 +66,25 @@ export default function AlunosPage() {
             <h1 className="text-[17px] font-bold text-gray-900">Alunos</h1>
             <p className="text-xs text-gray-400 mt-0.5">{students.length} alunos cadastrados</p>
           </div>
-          <button className="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+          >
             + Novo Aluno
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-7 py-6">
-          {/* Filters */}
           <div className="flex flex-wrap gap-3 mb-5">
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={e => setSearch(e.target.value)}
               placeholder="🔍  Buscar aluno..."
               className="px-4 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-green-500 w-full sm:w-64"
             />
-            <div className="flex gap-2">
-              {(['all', 'both', 'diet', 'workout'] as const).map((f) => (
+            <div className="flex gap-2 flex-wrap">
+              {(['all', 'both', 'diet', 'workout'] as const).map(f => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
@@ -87,9 +98,22 @@ export default function AlunosPage() {
             </div>
           </div>
 
-          {/* Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filtered.map((s) => {
+            {/* Add card */}
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-6 text-center hover:border-green-400 hover:bg-green-50/30 transition-all group flex flex-col items-center justify-center gap-3 min-h-[160px]"
+            >
+              <div className="w-12 h-12 rounded-full bg-gray-100 group-hover:bg-green-100 flex items-center justify-center text-2xl transition-colors">
+                +
+              </div>
+              <div>
+                <div className="font-bold text-gray-500 group-hover:text-green-700 text-sm transition-colors">Cadastrar novo aluno</div>
+                <div className="text-xs text-gray-400 mt-0.5">Clique para adicionar</div>
+              </div>
+            </button>
+
+            {filtered.map(s => {
               const { text, css } = planBadge(s.plans)
               return (
                 <Link
@@ -107,24 +131,24 @@ export default function AlunosPage() {
                         <div className="text-xs text-gray-400 mt-0.5">{s.email}</div>
                       </div>
                     </div>
-                    <span className={`text-[11px] font-semibold px-2 py-1 rounded-full ${STATUS_COLORS[s.status]}`}>
+                    <span className={`text-[11px] font-semibold px-2 py-1 rounded-full flex-shrink-0 ${STATUS_COLORS[s.status]}`}>
                       {STATUS_LABELS[s.status]}
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="flex flex-wrap gap-2 mb-3">
                     <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${css}`}>{text}</span>
-                    <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-                      {s.age} anos · {s.weight}kg
-                    </span>
+                    {(s.age > 0 || s.weight > 0) && (
+                      <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                        {s.age > 0 ? `${s.age} anos` : ''}{s.age > 0 && s.weight > 0 ? ' · ' : ''}{s.weight > 0 ? `${s.weight}kg` : ''}
+                      </span>
+                    )}
                   </div>
 
                   <div className="text-xs text-gray-400">
                     <span className="font-medium text-gray-600">Objetivo:</span> {s.goal}
                   </div>
-                  <div className="mt-2 text-xs text-gray-400">
-                    Atualizado: {s.lastUpdate}
-                  </div>
+                  <div className="mt-1 text-xs text-gray-400">Atualizado: {s.lastUpdate}</div>
 
                   <div className="mt-4 text-xs font-semibold text-blue-600 group-hover:text-blue-700">
                     Ver perfil →
@@ -133,7 +157,7 @@ export default function AlunosPage() {
               )
             })}
 
-            {filtered.length === 0 && (
+            {filtered.length === 0 && search && (
               <div className="col-span-full text-center py-16 text-gray-400">
                 <div className="text-4xl mb-3">🔍</div>
                 <div className="font-semibold">Nenhum aluno encontrado</div>
@@ -143,6 +167,8 @@ export default function AlunosPage() {
           </div>
         </div>
       </div>
+
+      {showModal && <NewStudentModal onClose={() => setShowModal(false)} onAdd={handleAdd} />}
     </div>
   )
 }

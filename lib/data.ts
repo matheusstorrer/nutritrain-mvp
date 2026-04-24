@@ -395,8 +395,20 @@ export const professionals = [
   { email: 'juliana@nutritrain.pro', password: 'pro123', name: 'Juliana Torres', role: 'Personal Trainer' },
 ]
 
+export function getStoredStudents(): Student[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem('nt_extra_students')
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+export function getAllStudents(): Student[] {
+  return [...students, ...getStoredStudents()]
+}
+
 export function getStudent(id: string) {
-  return students.find((s) => s.id === id) ?? null
+  return getAllStudents().find((s) => s.id === id) ?? null
 }
 
 export function getDietPlan(id: string | null) {
