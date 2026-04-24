@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { professionals, students } from '@/lib/data'
+import { professionals, getAllStudents } from '@/lib/data'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -36,7 +36,7 @@ export default function LoginPage() {
           setLoading(false)
         }
       } else {
-        const found = students.find((s) => s.email === email && s.password === password)
+        const found = getAllStudents().find((s) => s.email === email && s.password === password)
         if (found) {
           localStorage.setItem('nt_user', JSON.stringify({ name: found.name, role: 'student', studentId: found.id }))
           router.push('/portal')

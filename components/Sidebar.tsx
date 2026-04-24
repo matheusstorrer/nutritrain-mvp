@@ -10,7 +10,12 @@ interface Props {
 
 const navItems = [
   { href: '/dashboard', icon: '📊', label: 'Dashboard' },
-  { href: '/alunos', icon: '👥', label: 'Alunos', badge: '5' },
+  { href: '/alunos', icon: '👥', label: 'Alunos' },
+]
+
+const planItems = [
+  { href: '/planos?tipo=dieta', icon: '🥗', label: 'Alimentares' },
+  { href: '/planos?tipo=treino', icon: '💪', label: 'Treinos' },
 ]
 
 export default function Sidebar({ userName, userRole }: Props) {
@@ -23,7 +28,7 @@ export default function Sidebar({ userName, userRole }: Props) {
   }
 
   return (
-    <aside className="w-60 shrink-0 bg-slate-900 flex flex-col h-screen sticky top-0 overflow-y-auto no-scrollbar">
+    <aside className="w-60 shrink-0 bg-slate-900 flex flex-col h-screen sticky top-0 overflow-y-auto no-scrollbar print:hidden">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">
@@ -56,11 +61,6 @@ export default function Sidebar({ userName, userRole }: Props) {
             >
               <span className="text-base w-5 text-center">{item.icon}</span>
               <span>{item.label}</span>
-              {item.badge && (
-                <span className="ml-auto bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                  {item.badge}
-                </span>
-              )}
             </Link>
           )
         })}
@@ -69,14 +69,23 @@ export default function Sidebar({ userName, userRole }: Props) {
           <div className="text-white/25 text-[10px] font-bold uppercase tracking-[2px] px-2 pb-2">
             Planos
           </div>
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-white/30 cursor-default">
-            <span className="text-base w-5 text-center">🥗</span>
-            <span>Alimentares</span>
-          </div>
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-white/30 cursor-default">
-            <span className="text-base w-5 text-center">💪</span>
-            <span>Treinos</span>
-          </div>
+          {planItems.map((item) => {
+            const active = pathname.startsWith('/planos')
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium mb-0.5 transition-all ${
+                  active && pathname === '/planos'
+                    ? 'bg-green-500/10 text-green-400'
+                    : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                }`}
+              >
+                <span className="text-base w-5 text-center">{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            )
+          })}
         </div>
       </nav>
 

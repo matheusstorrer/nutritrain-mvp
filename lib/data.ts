@@ -404,11 +404,51 @@ export function getStoredStudents(): Student[] {
 }
 
 export function getAllStudents(): Student[] {
-  return [...students, ...getStoredStudents()]
+  const extras = getStoredStudents()
+  if (typeof window === 'undefined') return [...students, ...extras]
+  try {
+    const overrides: Record<string, Partial<Student>> = JSON.parse(localStorage.getItem('nt_student_overrides') ?? '{}')
+    const base = students.map(s => overrides[s.id] ? { ...s, ...overrides[s.id] } : s)
+    return [...base, ...extras]
+  } catch {
+    return [...students, ...extras]
+  }
 }
 
 export function getStudent(id: string) {
   return getAllStudents().find((s) => s.id === id) ?? null
+}
+
+export function saveStudentPlanUpdate(studentId: string, updates: Partial<Pick<Student, 'dietPlanId' | 'workoutPlanId' | 'plans'>>) {
+  if (typeof window === 'undefined') return
+  try {
+    const extras: Student[] = JSON.parse(localStorage.getItem('nt_extra_students') ?? '[]')
+    const idx = extras.findIndex(s => s.id === studentId)
+    if (idx >= 0) {
+      extras[idx] = { ...extras[idx], ...updates }
+      localStorage.setItem('nt_extra_students', JSON.stringify(extras))
+      return
+    }
+    const overrides: Record<string, Partial<Student>> = JSON.parse(localStorage.getItem('nt_student_overrides') ?? '{}')
+    overrides[studentId] = { ...(overrides[studentId] ?? {}), ...updates }
+    localStorage.setItem('nt_student_overrides', JSON.stringify(overrides))
+  } catch {}
+}
+
+export function getStoredExercises(planId: string, day: string): Exercise[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(`nt_ex_${planId}_${day}`)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+export function saveExercise(planId: string, day: string, exercise: Exercise) {
+  if (typeof window === 'undefined') return
+  try {
+    const existing = getStoredExercises(planId, day)
+    localStorage.setItem(`nt_ex_${planId}_${day}`, JSON.stringify([...existing, exercise]))
+  } catch {}
 }
 
 export function getDietPlan(id: string | null) {

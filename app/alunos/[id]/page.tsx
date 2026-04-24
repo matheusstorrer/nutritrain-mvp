@@ -4,9 +4,14 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
-import { getStudent, getDietPlan, getWorkoutPlan, WEEK_DAYS } from '@/lib/data'
+import AssignPlanModal from '@/components/AssignPlanModal'
+import { getStudent, getDietPlan, getWorkoutPlan, WEEK_DAYS, saveExercise, getStoredExercises, Exercise } from '@/lib/data'
 
 interface User { name: string; jobRole: string }
+
+const EXERCISE_EMOJIS = ['🏋️', '💪', '🤸', '🦵', '🔥', '⚡', '🏃', '🔄', '🦶']
+
+const defaultExForm = { name: '', muscle: '', sets: '3', reps: '12', rest: '60s', load: '' }
 
 export default function StudentProfilePage() {
   const router = useRouter()
@@ -16,6 +21,16 @@ export default function StudentProfilePage() {
   const [user, setUser] = useState<User | null>(null)
   const [tab, setTab] = useState<'dieta' | 'treino'>('dieta')
   const [activeDay, setActiveDay] = useState('Segunda')
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  // Assign plan modal
+  const [showAssign, setShowAssign] = useState(false)
+  const [assignType, setAssignType] = useState<'diet' | 'workout' | null>(null)
+
+  // Add exercise modal
+  const [showAddEx, setShowAddEx] = useState(false)
+  const [exForm, setExForm] = useState(defaultExForm)
+  const [exSaving, setExSaving] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem('nt_user')
@@ -25,9 +40,52 @@ export default function StudentProfilePage() {
     setUser({ name: u.name, jobRole: u.jobRole })
   }, [router])
 
+  // Derived data — re-runs every render (refreshKey triggers re-render)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const student = getStudent(id)
   const diet = getDietPlan(student?.dietPlanId ?? null)
   const workout = getWorkoutPlan(student?.workoutPlanId ?? null)
+  const workoutDayObj = workout?.days[activeDay]
+  const extraExercises = workout ? getStoredExercises(workout.id, activeDay) : []
+  const allExercises = [...(workoutDayObj?.exercises ?? []), ...extraExercises]
+
+  // Keep refreshKey in dep array so ESLint doesn't warn
+  void refreshKey
+
+  function openAssign(type: 'diet' | 'workout' | null) {
+    setAssignType(type)
+    setShowAssign(true)
+  }
+
+  function handleAssigned() {
+    setRefreshKey(k => k + 1)
+    setShowAssign(false)
+  }
+
+  function setEx(key: string, value: string) {
+    setExForm(f => ({ ...f, [key]: value }))
+  }
+
+  function handleSaveExercise() {
+    if (!workout || !exForm.name.trim()) return
+    setExSaving(true)
+    setTimeout(() => {
+      const exercise: Exercise = {
+        name: exForm.name.trim(),
+        muscle: exForm.muscle.trim() || 'Geral',
+        sets: parseInt(exForm.sets) || 3,
+        reps: exForm.reps || '12',
+        rest: exForm.rest || '60s',
+        load: exForm.load.trim() || 'Peso corporal',
+        emoji: EXERCISE_EMOJIS[Math.floor(Math.random() * EXERCISE_EMOJIS.length)],
+      }
+      saveExercise(workout.id, activeDay, exercise)
+      setRefreshKey(k => k + 1)
+      setShowAddEx(false)
+      setExForm(defaultExForm)
+      setExSaving(false)
+    }, 400)
+  }
 
   if (!user) return null
   if (!student) return (
@@ -38,11 +96,7 @@ export default function StudentProfilePage() {
 
   const hasDiet = !!diet
   const hasWorkout = !!workout
-
-  // Macro totals from meals
   const totalKcal = diet ? diet.meals.reduce((s, m) => s + m.items.reduce((a, i) => a + i.kcal, 0), 0) : 0
-
-  const workoutDayObj = workout?.days[activeDay]
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -50,17 +104,23 @@ export default function StudentProfilePage() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Topbar */}
-        <div className="bg-white border-b border-gray-200 px-7 py-4 flex items-center justify-between">
+        <div className="bg-white border-b border-gray-200 px-7 py-4 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-3">
             <Link href="/alunos" className="text-gray-400 hover:text-gray-600 text-sm">← Alunos</Link>
             <span className="text-gray-300">/</span>
             <span className="text-sm font-semibold text-gray-900">{student.name}</span>
           </div>
           <div className="flex gap-2">
-            <button className="text-sm font-semibold text-gray-600 bg-white border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition-colors">
+            <button
+              onClick={() => window.open(`mailto:${student.email}?subject=NutriTrain Pro — ${student.name}`)}
+              className="text-sm font-semibold text-gray-600 bg-white border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition-colors"
+            >
               ✉️ Email
             </button>
-            <button className="text-sm font-semibold text-white bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-lg transition-colors">
+            <button
+              onClick={() => openAssign(null)}
+              className="text-sm font-semibold text-white bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-lg transition-colors"
+            >
               + Novo Plano
             </button>
           </div>
@@ -124,8 +184,7 @@ export default function StudentProfilePage() {
 
             {/* Right: tabs */}
             <div className="flex-1 min-w-0">
-              {/* Tab bar */}
-              <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-5 w-fit">
+              <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-5 w-fit print:hidden">
                 <button
                   onClick={() => setTab('dieta')}
                   className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
@@ -151,25 +210,37 @@ export default function StudentProfilePage() {
                     <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center text-gray-400">
                       <div className="text-4xl mb-3">🥗</div>
                       <div className="font-semibold">Nenhum plano alimentar</div>
-                      <div className="text-sm mt-1">Crie um plano para este aluno</div>
-                      <button className="mt-4 bg-green-500 text-white text-sm font-semibold px-4 py-2 rounded-lg">
-                        + Criar Plano Alimentar
+                      <div className="text-sm mt-1">Atribua um plano para este aluno</div>
+                      <button
+                        onClick={() => openAssign('diet')}
+                        className="mt-4 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                      >
+                        + Atribuir Plano Alimentar
                       </button>
                     </div>
                   ) : (
                     <>
-                      {/* Diet header */}
                       <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
                         <div className="flex items-center justify-between mb-4">
                           <div>
                             <h3 className="font-bold text-gray-900">{diet.name}</h3>
                             <p className="text-xs text-gray-400 mt-0.5">Atualizado em {diet.updatedAt}</p>
                           </div>
-                          <button className="text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors">
-                            📄 Gerar PDF
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => openAssign('diet')}
+                              className="text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors print:hidden"
+                            >
+                              🔄 Trocar
+                            </button>
+                            <button
+                              onClick={() => window.print()}
+                              className="text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors print:hidden"
+                            >
+                              📄 Gerar PDF
+                            </button>
+                          </div>
                         </div>
-                        {/* Macros */}
                         <div className="grid grid-cols-4 gap-3">
                           {[
                             { label: 'Calorias', value: `${totalKcal}`, unit: 'kcal', color: 'text-orange-600' },
@@ -186,7 +257,6 @@ export default function StudentProfilePage() {
                         </div>
                       </div>
 
-                      {/* Meals */}
                       <div className="flex flex-col gap-3">
                         {diet.meals.map((meal) => {
                           const mKcal = meal.items.reduce((s, i) => s + i.kcal, 0)
@@ -246,14 +316,16 @@ export default function StudentProfilePage() {
                     <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center text-gray-400">
                       <div className="text-4xl mb-3">💪</div>
                       <div className="font-semibold">Nenhum plano de treino</div>
-                      <div className="text-sm mt-1">Crie um plano para este aluno</div>
-                      <button className="mt-4 bg-slate-900 text-white text-sm font-semibold px-4 py-2 rounded-lg">
-                        + Criar Plano de Treino
+                      <div className="text-sm mt-1">Atribua um plano para este aluno</div>
+                      <button
+                        onClick={() => openAssign('workout')}
+                        className="mt-4 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                      >
+                        + Atribuir Plano de Treino
                       </button>
                     </div>
                   ) : (
                     <>
-                      {/* Workout header */}
                       <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
                         <div className="flex items-center justify-between mb-4">
                           <div>
@@ -262,11 +334,21 @@ export default function StudentProfilePage() {
                               {workout.daysPerWeek}x por semana · Atualizado em {workout.updatedAt}
                             </p>
                           </div>
-                          <button className="text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors">
-                            📄 Gerar PDF
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => openAssign('workout')}
+                              className="text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors print:hidden"
+                            >
+                              🔄 Trocar
+                            </button>
+                            <button
+                              onClick={() => window.print()}
+                              className="text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors print:hidden"
+                            >
+                              📄 Gerar PDF
+                            </button>
+                          </div>
                         </div>
-                        {/* Day selector */}
                         <div className="flex flex-wrap gap-2">
                           {WEEK_DAYS.map((day) => {
                             const dayData = workout.days[day]
@@ -291,25 +373,29 @@ export default function StudentProfilePage() {
                         </div>
                       </div>
 
-                      {/* Exercise list */}
-                      {workoutDayObj ? (
+                      {workoutDayObj || extraExercises.length > 0 ? (
                         <>
                           <div className="flex items-center justify-between mb-3">
                             <div>
-                              <h4 className="font-bold text-gray-900">{activeDay} — {workoutDayObj.focus}</h4>
+                              <h4 className="font-bold text-gray-900">
+                                {activeDay}{workoutDayObj ? ` — ${workoutDayObj.focus}` : ' — Personalizado'}
+                              </h4>
                               <p className="text-xs text-gray-400 mt-0.5">
-                                {workoutDayObj.exercises.length} exercícios · ~{workoutDayObj.duration} minutos
+                                {allExercises.length} exercícios{workoutDayObj ? ` · ~${workoutDayObj.duration} minutos` : ''}
                               </p>
                             </div>
-                            <button className="text-xs font-semibold text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors">
+                            <button
+                              onClick={() => setShowAddEx(true)}
+                              className="text-xs font-semibold text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors print:hidden"
+                            >
                               + Adicionar
                             </button>
                           </div>
 
                           <div className="flex flex-col gap-2.5">
-                            {workoutDayObj.exercises.map((ex, idx) => (
+                            {allExercises.map((ex, idx) => (
                               <div
-                                key={ex.name}
+                                key={`${ex.name}-${idx}`}
                                 className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-4 hover:shadow-sm transition-shadow"
                               >
                                 <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center text-sm font-black flex-shrink-0">
@@ -341,10 +427,21 @@ export default function StudentProfilePage() {
                           </div>
                         </>
                       ) : (
-                        <div className="bg-gray-50 rounded-2xl p-8 text-center text-gray-400">
-                          <div className="text-2xl mb-2">😴</div>
-                          <div className="font-semibold text-sm">Dia de descanso</div>
-                        </div>
+                        <>
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-bold text-gray-900">{activeDay}</h4>
+                            <button
+                              onClick={() => setShowAddEx(true)}
+                              className="text-xs font-semibold text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors"
+                            >
+                              + Adicionar exercício
+                            </button>
+                          </div>
+                          <div className="bg-gray-50 rounded-2xl p-8 text-center text-gray-400">
+                            <div className="text-2xl mb-2">😴</div>
+                            <div className="font-semibold text-sm">Dia de descanso</div>
+                          </div>
+                        </>
                       )}
                     </>
                   )}
@@ -354,6 +451,91 @@ export default function StudentProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Assign Plan Modal */}
+      {showAssign && student && (
+        <AssignPlanModal
+          student={student}
+          defaultType={assignType}
+          onClose={() => setShowAssign(false)}
+          onAssigned={handleAssigned}
+        />
+      )}
+
+      {/* Add Exercise Modal */}
+      {showAddEx && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAddEx(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-900 to-[#1e3a5f] px-6 py-5 flex items-center justify-between">
+              <div>
+                <h2 className="text-white font-black text-lg">Adicionar Exercício</h2>
+                <p className="text-white/40 text-xs mt-0.5">{activeDay}{workoutDayObj ? ` — ${workoutDayObj.focus}` : ''}</p>
+              </div>
+              <button onClick={() => setShowAddEx(false)} className="text-white/40 hover:text-white/80 text-xl transition-colors">✕</button>
+            </div>
+
+            <div className="px-6 py-5 flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">
+                  Nome do exercício <span className="text-red-400">*</span>
+                </label>
+                <input
+                  value={exForm.name}
+                  onChange={e => setEx('name', e.target.value)}
+                  placeholder="Ex: Supino Reto com Barra"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-green-500 focus:bg-white transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Músculo / Foco</label>
+                <input
+                  value={exForm.muscle}
+                  onChange={e => setEx('muscle', e.target.value)}
+                  placeholder="Ex: Peitoral, tríceps"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-green-500 focus:bg-white transition-colors"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { key: 'sets', label: 'Séries', placeholder: '3' },
+                  { key: 'reps', label: 'Repetições', placeholder: '12' },
+                  { key: 'rest', label: 'Descanso', placeholder: '60s' },
+                  { key: 'load', label: 'Carga', placeholder: 'Ex: 20kg' },
+                ].map(f => (
+                  <div key={f.key}>
+                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">{f.label}</label>
+                    <input
+                      value={exForm[f.key as keyof typeof exForm]}
+                      onChange={e => setEx(f.key, e.target.value)}
+                      placeholder={f.placeholder}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-green-500 focus:bg-white transition-colors"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <button
+                onClick={() => setShowAddEx(false)}
+                className="text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveExercise}
+                disabled={!exForm.name.trim() || exSaving}
+                className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {exSaving ? (
+                  <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Salvando...</>
+                ) : '+ Adicionar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
